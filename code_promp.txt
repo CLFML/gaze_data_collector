@@ -1,0 +1,84 @@
+Create a Python app for my Mediapipe facial and iris landmarks data collection experiment with the goals to 
+a) have the experimenter enter experiment data (experimenter ID), subject metadata (ID, age, gender, vision correction, dominant eye), 
+and retreive setup metadata from the windows machine (webcam, screen, physical dimension of screen, laptop, OS)
+b) have the experimenter setup the experiment:  Seat the subject at the defined distance from the laptop, set pitch (using digital inclinometer) and yaw (using printed A3 pattern to set laptop) camera angle. 
+Enter the data Yaw: 0°, ±15°, ±30°, camera pitch: 0°, ±15°, ±30°, subject-to-camera distance (what are suitable distances?)
+c) Save the metadata to a json file
+d) Display a Random dot on a 9 point grid on the screen, make it a sequence, allowing the subject to focus on the dot and rest their eyes for a moment.
+e) Save Mediapipe facial and iris landmarks to csv where the first column of the csv file is the time of the camera frame,
+ the next columns of the csv files are the center coordinates of the random dat that is being displayed. Then the remaining columns are the coordinate of the mediapip landmark outputs per camera frame, so every row is a new frame
+f) Data is stored according to this folder structure:
+
+```
+YYYYMMDD_GazeEstimationExperiment/
+└── SubjectID/
+    ├── Metadata.json
+    └── AngleSetups/
+        ├── Y00_P00_D30/
+        │   ├── LandmarkData.csv
+        │   └── ExperimentData.csv
+        ├── Y15_P-15_D60/
+        │   ├── LandmarkData.csv
+        │   └── ExperimentData.csv
+        └── ... (other angle combinations)
+```
+Where:
+- YYYYMMDD: Date of the experiment
+- SubjectID: Unique identifier for the subject (e.g., S001, S002)
+- ExperimentType: Short code for the experiment type (e.g., GP for Gaze Patterns)
+- YawAngle: Yaw angle of the camera (e.g., Y00, Y15, Y-30)
+- PitchAngle: Pitch angle of the camera (e.g., P00, P-15, P30)
+- Distance: Distance between camera and forehead of subject in (cm)
+
+g) Repeat this for 3 distances, 5 yaw angles, 5 pitch angles
+
+
+
+I'll help you create an optimized prompt for generating the Python app code. Let's break this down into clear, specific components that will make code generation more successful:
+
+
+
+Here's an optimized prompt structure:
+
+"Please help me create a Python application for collecting facial and iris landmark data using MediaPipe. Let's break this down into components:
+
+1. First, let's create the core application structure and metadata collection module. The app should:
+- Use PyQt5 for the GUI
+- Implement a workflow-based interface (metadata entry → setup → experiment → data collection)
+- Handle metadata collection as specified (experimenter ID, subject data, system info)
+- Generate appropriate folder structures
+- Save metadata in JSON format
+
+Can you create this initial structure with proper error handling and input validation?
+
+After that, we can build:
+2. Experiment setup and calibration module
+3. MediaPipe integration and data collection
+4. Stimulus presentation (dot display) module
+5. Data saving and organization module
+
+For each component, we should specify:
+- Required dependencies
+- Class/function structure 
+- Error handling
+- Testing approach
+
+Starting parameters:
+- Screen grid: 3x3 (9 points)
+- Camera angles: Yaw (0°, ±15°, ±30°), Pitch (0°, ±15°, ±30°)
+- Distances: 30cm, 60cm, 90cm (typical working distances)
+- Data rate: 30 fps
+- Dot display time: 2 seconds per position
+- Rest time between positions: 1 second
+
+Would you like to start with the core application structure and metadata collection module?"
+
+This prompt structure:
+1. Breaks down the complex task into manageable pieces
+2. Provides specific technical requirements
+3. Defines clear parameters
+4. Allows for iterative development
+5. Makes it easier for the AI to generate focused, working code
+6. Enables better error checking and validation at each step
+
+Would you like me to proceed with generating the code for the first component using this structured approach?
