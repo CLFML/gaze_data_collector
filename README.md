@@ -108,8 +108,7 @@ YYYYMMDD_GazeEstimationExperiment/
     ├── Metadata.json           # Subject and session information
     ├── Trial_001/
     │   ├── setup_config.json   # Camera angles and distance
-    │   ├── landmark_data.csv   # MediaPipe outputs
-    │   └── experiment_data.csv # Dot positions and timestamps
+    │   └── landmark_data.csv   # MediaPipe outputs, dot positions and timestamps
     ├── Trial_002/
     └── ...
 ```
