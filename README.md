@@ -3,6 +3,9 @@
 This application collects facial landmark data for gaze estimation research using MediaPipe and OpenCV. 
 It provides a complete workflow for conducting multi-trial gaze estimation experiments with multiple subjects.
 
+
+Note: This application is designed for Windows systems only.
+
 ## Features
 
 ### Data Collection
@@ -136,6 +139,7 @@ YYYYMMDD_GazeEstimationExperiment/
 
 ## Requirements
 
+- Windows 10 or later
 - Python 3.8 or higher
 - High-quality webcam (1080p recommended)
 - Digital inclinometer for angle measurement
