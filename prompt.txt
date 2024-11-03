@@ -36,8 +36,6 @@ g) Repeat this for 3 distances, 5 yaw angles, 5 pitch angles
 
 I'll help you create an optimized prompt for generating the Python app code. Let's break this down into clear, specific components that will make code generation more successful:
 
-
-
 Here's an optimized prompt structure:
 
 "Please help me create a Python application for collecting facial and iris landmark data using MediaPipe. Let's break this down into components:
