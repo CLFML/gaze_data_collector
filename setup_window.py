@@ -2,7 +2,7 @@ import sys
 from datetime import datetime
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                             QPushButton, QComboBox, QFormLayout, QMessageBox,
-                            QGroupBox, QApplication)
+                            QGroupBox, QApplication, QDoubleSpinBox)
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPixmap, QImage
 import cv2
@@ -70,6 +70,25 @@ class SetupWindow(QWidget):
         # Right panel for controls
         controls_layout = QVBoxLayout()
         
+        # Add pitch calibration group
+        calibration_group = QGroupBox("Pitch Calibration")
+        calibration_layout = QVBoxLayout()
+        
+        # Pitch offset input
+        offset_layout = QHBoxLayout()
+        self.pitch_offset = QDoubleSpinBox()
+        self.pitch_offset.setRange(-45.0, 45.0)
+        self.pitch_offset.setDecimals(1)
+        self.pitch_offset.setSingleStep(0.5)
+        self.pitch_offset.setValue(0.0)
+        offset_layout.addWidget(QLabel("Natural Head Pitch Offset:"))
+        offset_layout.addWidget(self.pitch_offset)
+        offset_layout.addWidget(QLabel("degrees"))
+        calibration_layout.addLayout(offset_layout)
+        
+        calibration_group.setLayout(calibration_layout)
+        controls_layout.addWidget(calibration_group)
+        
         # Setup parameters group
         setup_group = QGroupBox("Setup Parameters")
         setup_form = QFormLayout()
@@ -91,17 +110,18 @@ class SetupWindow(QWidget):
         
         setup_group.setLayout(setup_form)
         controls_layout.addWidget(setup_group)
-        
+
         # Setup instructions group
         instructions_group = QGroupBox("Setup Instructions")
         instructions_layout = QVBoxLayout()
         
         instructions_text = """
         1. Position the subject at the marked distance
-        2. Use the digital inclinometer to set camera pitch
-        3. Use the printed pattern to set camera yaw
-        4. Verify subject is centered in camera view
-        5. Ensure good lighting conditions
+        2. Set and save the pitch calibration first
+        3. Use the digital inclinometer to set camera pitch
+        4. Use the printed pattern to set camera yaw
+        5. Verify subject is centered in camera view
+        6. Ensure good lighting conditions
         """
         instructions_label = QLabel(instructions_text)
         instructions_layout.addWidget(instructions_label)
@@ -347,6 +367,10 @@ class SetupWindow(QWidget):
         try:
             # Create new trial directory
             trial_dir = self.data_manager.create_trial_directory(self.subject_dir)
+
+            # Get selected pitch and apply offset correction
+            selected_pitch = self.pitch_angles[self.pitch_combo.currentIndex()]
+            corrected_pitch = selected_pitch - self.pitch_offset  # Subtract offset to get true pitch
             
             # Prepare trial configuration
             trial_config = {
@@ -354,7 +378,9 @@ class SetupWindow(QWidget):
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "setup": {
                     "yaw": self.yaw_angles[self.yaw_combo.currentIndex()],
-                    "pitch": self.pitch_angles[self.pitch_combo.currentIndex()],
+                    "pitch": selected_pitch,  # Store selected pitch
+                    "corrected_pitch": corrected_pitch,  # Store corrected pitch
+                    "pitch_offset": self.pitch_offset,  # Store offset for reference
                     "distance": self.distances[self.distance_combo.currentIndex()]
                 },
                 "conditions": {
@@ -375,7 +401,7 @@ class SetupWindow(QWidget):
                 trial_config
             )
             self.experiment_window.show()
-            self.close()
+            self.hide()
             
         except Exception as e:
             QMessageBox.critical(self, "Error", 

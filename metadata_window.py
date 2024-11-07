@@ -135,13 +135,16 @@ class MainWindow(QMainWindow):
         
         subject_group.setLayout(subject_layout)
         layout.addWidget(subject_group)
-        
+
         # System Information Preview
         system_group = QGroupBox("System Information (Auto-detected)")
         system_layout = QVBoxLayout()
         self.system_info_text = QTextEdit()
         self.system_info_text.setReadOnly(True)
         system_layout.addWidget(self.system_info_text)
+        collect_metadata_btn = QPushButton("Collect System Metadata")
+        collect_metadata_btn.clicked.connect(self.collect_metadata)
+        system_layout.addWidget(collect_metadata_btn)
         system_group.setLayout(system_layout)
         layout.addWidget(system_group)
         
@@ -162,11 +165,7 @@ class MainWindow(QMainWindow):
         
         # Add buttons
         button_layout = QHBoxLayout()
-        
-        self.collect_metadata_btn = QPushButton("Collect System Metadata")
-        self.collect_metadata_btn.clicked.connect(self.collect_metadata)
-        button_layout.addWidget(self.collect_metadata_btn)
-        
+            
         self.next_btn = QPushButton("Next")
         self.next_btn.clicked.connect(self.proceed_to_setup)
         self.next_btn.setEnabled(False)  # Disable until metadata is collected
@@ -176,7 +175,6 @@ class MainWindow(QMainWindow):
         
         # Automatically collect system metadata on startup
         QApplication.processEvents()
-        self.collect_metadata()
         
     def collect_metadata(self):
         """Collect and store all metadata including system information."""
