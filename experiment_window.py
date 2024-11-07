@@ -32,7 +32,8 @@ class ExperimentWindow(QWidget):
         self.mp_face_mesh = None
         self.current_dot_position = None
         self.landmarks_data = []
-        
+        self.is_center_point = False
+
         # Get parameters from trial config
         conditions = trial_config['conditions']
         self.dot_radius = conditions['dot_radius']
@@ -43,11 +44,27 @@ class ExperimentWindow(QWidget):
         # Generate grid points
         self.grid_points = self.generate_grid_points()
         self.remaining_points = self.grid_points.copy()
+
+        # Find center point coordinates
+        self.center_point = self.calculate_center_point()        
         
         # Setup UI and start experiment
         self.setup_ui()
         self.setup_mediapipe()
         self.setup_camera()
+
+    def calculate_center_point(self):
+        """Calculate the coordinates of the center point based on grid size."""
+        margin_h = 0.1
+        margin_v = 0.1
+        available_width = 1 - (2 * margin_h)
+        available_height = 1 - (2 * margin_v)
+        
+        # Calculate center coordinates
+        center_x = margin_h + (available_width / 2)
+        center_y = margin_v + (available_height / 2)
+        
+        return (center_x, center_y)        
         
     def setup_ui(self):
         """Initialize the UI components."""
@@ -135,10 +152,14 @@ class ExperimentWindow(QWidget):
         point_idx = random.randint(0, len(self.remaining_points) - 1)
         self.current_dot_position = self.remaining_points.pop(point_idx)
         
-        # Update status
+        # Check if this is the center point
+        self.is_center_point = (self.current_dot_position == self.center_point)
+        
+        # Update status with smile request if center point
         points_left = len(self.remaining_points)
         total_points = len(self.grid_points)
-        self.status_label.setText(f"Please look at the dot ({total_points - points_left}/{total_points})")
+        status_text = "\n😊 smile! 😊" if self.is_center_point else f"Please look at the dot ({total_points - points_left}/{total_points})"
+        self.status_label.setText(status_text)
         
         # Schedule next dot
         QTimer.singleShot(self.dot_display_time, self.rest_period)
@@ -203,9 +224,10 @@ class ExperimentWindow(QWidget):
         painter.setBrush(Qt.NoBrush)
         painter.drawEllipse(QPoint(int(x), int(y)), self.dot_radius + 2, self.dot_radius + 2)
         
-        # Draw red dot
-        painter.setPen(QPen(QColor(255, 0, 0), 2))
-        painter.setBrush(QColor(255, 0, 0))
+        # Draw dot - green for center point, red for others
+        color = QColor(0, 255, 0) if self.is_center_point else QColor(255, 0, 0)
+        painter.setPen(QPen(color, 2))
+        painter.setBrush(color)
         painter.drawEllipse(QPoint(int(x), int(y)), self.dot_radius, self.dot_radius)
         
     def finish_experiment(self):
