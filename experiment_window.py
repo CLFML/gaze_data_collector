@@ -84,7 +84,7 @@ class ExperimentWindow(QWidget):
         # Status label
         self.status_label = QLabel("Preparing experiment...", self)
         self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: gray; font-size: 16px;")
+        self.status_label.setStyleSheet("color: gray; font-size: 24px;")
         layout.addWidget(self.status_label)
         
     def setup_mediapipe(self):
@@ -167,7 +167,7 @@ class ExperimentWindow(QWidget):
         # Update status with smile request if center point
         points_left = len(self.remaining_points)
         total_points = len(self.grid_points)
-        status_text = "\n😊 smile! 😊" if self.is_center_point else f"Please look at the dot ({total_points - points_left}/{total_points})"
+        status_text = "\n😊 smile! 😊" if self.is_center_point else "" # f"Please look at the dot ({total_points - points_left}/{total_points})"
         self.status_label.setText(status_text)
         
         # Schedule next dot
@@ -179,7 +179,7 @@ class ExperimentWindow(QWidget):
     def rest_period(self):
         """Insert a rest period between dots."""
         self.current_dot_position = None
-        self.status_label.setText("Rest...")
+        # self.status_label.setText("Rest...")
         self.update()
         
         QTimer.singleShot(self.rest_time, self.show_next_dot)
