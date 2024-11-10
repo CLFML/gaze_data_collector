@@ -237,14 +237,60 @@ class MainWindow(QMainWindow):
             preview_text += f"- Physical Size: {screen.get('size_mm', 'Unknown')} mm\n"
             preview_text += f"- Refresh Rate: {screen.get('refresh_rate', 'Unknown')} Hz\n"
         
-        return preview_text        
+        return preview_text
+    
+    def show_consent_dialog(self, title, message):
+        """
+        Display a wide consent dialog with proper formatting.
+        
+        Args:
+            parent: Parent widget
+            title: Dialog title
+            message: Consent message text
+            
+        Returns:
+            bool: True if user accepted, False otherwise
+        """
+        msg = QMessageBox(self)
+        msg.setWindowTitle(title)
+        msg.setText(message)
+        # msg.setIcon(QMessageBox.Question)
+        
+        # Set minimum width for the message box
+        msg.setStyleSheet("""
+            QMessageBox {
+                min-width: 1400px;
+                font-size: 14pt;
+            }
+            QMessageBox QLabel {
+                min-width: 1400px;
+                min-height: 400px;
+                font-size: 14pt;
+            }
+            QMessageBox QPushButton {
+                font-size: 14pt;
+                padding: 5px 20px;
+                min-width: 120px;
+            }
+        """)
+        
+        # Add custom buttons
+        accept_button = msg.addButton("I Consent", QMessageBox.AcceptRole)
+        decline_button = msg.addButton("I Do Not Consent", QMessageBox.RejectRole)
+        
+        # Format the message text with line breaks
+        formatted_message = message.replace(". ", ".\n\n")
+        msg.setText(formatted_message)
+        
+        msg.exec_()
+        
+        return msg.clickedButton() == accept_button    
 
     def show_consent_form(self):
         """Display informed consent form and get user response."""
-        consent_text = """INFORMED CONSENT FOR GAZE TRACKING STUDY
-
+        consent_text = """
 Purpose:
-This study collects data about eye movements and facial landmarks to improve human-robot interaction. 
+This study collects data about eye movements and facial landmarks to improve human-robot interaction.
 
 Procedure:
 - You will look at dots appearing on the screen while a camera tracks your face
@@ -271,12 +317,14 @@ Risks & Benefits:
 
 Do you consent to participate in this study?"""
 
-        reply = QMessageBox.question(self, 'Informed Consent', 
-                                   consent_text,
-                                   QMessageBox.Yes | QMessageBox.No,
-                                   QMessageBox.No)
-        
-        if reply == QMessageBox.Yes:
+        reply = self.show_consent_dialog("INFORMED CONSENT FOR GAZE TRACKING STUDY", consent_text)
+
+        # reply = QMessageBox.question(self, 'Informed Consent', 
+        #                            consent_text,
+        #                            QMessageBox.Yes | QMessageBox.No,
+        #                            QMessageBox.No)
+                
+        if reply: #== QMessageBox.Yes:
             self.consent_given = True
             # Add consent to metadata
             self.metadata['consent'] = {
