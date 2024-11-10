@@ -33,8 +33,8 @@ class SetupWindow(QWidget):
         
         # Define experimental parameters first
         self.yaw_angles = [0, 15, -15, 30, -30]
-        self.pitch_angles = [0, 15, -15, 30, -30]
-        self.distances = [30, 60, 90]  # cm
+        self.pitch_angles = [90, 100, 110, 120]
+        self.distances = [60, 90]  # cm
 
         # Add trial tracking
         self.completed_setups = set()  # Track which angle/distance combinations have been done
@@ -74,17 +74,17 @@ class SetupWindow(QWidget):
         calibration_group = QGroupBox("Pitch Calibration")
         calibration_layout = QVBoxLayout()
         
-        # Pitch offset input
-        offset_layout = QHBoxLayout()
-        self.pitch_offset = QDoubleSpinBox()
-        self.pitch_offset.setRange(-90.0,90.0)
-        self.pitch_offset.setDecimals(1)
-        self.pitch_offset.setSingleStep(0.5)
-        self.pitch_offset.setValue(0.0)
-        offset_layout.addWidget(QLabel("Natural Head Pitch Offset:"))
-        offset_layout.addWidget(self.pitch_offset)
-        offset_layout.addWidget(QLabel("degrees"))
-        calibration_layout.addLayout(offset_layout)
+        # # Pitch offset input
+        # offset_layout = QHBoxLayout()
+        # self.pitch_offset = QDoubleSpinBox()
+        # self.pitch_offset.setRange(-90.0,90.0)
+        # self.pitch_offset.setDecimals(1)
+        # self.pitch_offset.setSingleStep(0.5)
+        # self.pitch_offset.setValue(0.0)
+        # offset_layout.addWidget(QLabel("Natural Head Pitch Offset:"))
+        # offset_layout.addWidget(self.pitch_offset)
+        # offset_layout.addWidget(QLabel("degrees"))
+        # calibration_layout.addLayout(offset_layout)
         
         calibration_group.setLayout(calibration_layout)
         controls_layout.addWidget(calibration_group)
@@ -383,7 +383,7 @@ class SetupWindow(QWidget):
 
             # Get selected pitch and apply offset correction
             selected_pitch = self.pitch_angles[self.pitch_combo.currentIndex()]
-            corrected_pitch = selected_pitch - self.pitch_offset  # Subtract offset to get true pitch
+            # corrected_pitch = selected_pitch - self.pitch_offset  # Subtract offset to get true pitch
             
             # Prepare trial configuration
             trial_config = {
@@ -392,8 +392,8 @@ class SetupWindow(QWidget):
                 "setup": {
                     "yaw": self.yaw_angles[self.yaw_combo.currentIndex()],
                     "pitch": selected_pitch,  # Store selected pitch
-                    "corrected_pitch": corrected_pitch,  # Store corrected pitch
-                    "pitch_offset": self.pitch_offset,  # Store offset for reference
+                    # "corrected_pitch": corrected_pitch,  # Store corrected pitch
+                    # "pitch_offset": self.pitch_offset,  # Store offset for reference
                     "distance": self.distances[self.distance_combo.currentIndex()]
                 },
                 "conditions": {
