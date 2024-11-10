@@ -7,6 +7,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,  
                             QLineEdit, QComboBox, QPushButton, QFormLayout, QMessageBox, 
                             QSpinBox, QGroupBox, QTextEdit, QApplication)
+from PyQt5.QtCore import QThread, pyqtSignal
 from setup_window import SetupWindow
 
 class SystemInfoCollector:
@@ -37,31 +38,20 @@ class SystemInfoCollector:
     def get_camera_info():
         """Collect webcam specifications."""
         try:
+            camera_info = {}
             cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                return {}
-                
-            camera_info = {
-                "resolution": f"{int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}",
-                "fps": int(cap.get(cv2.CAP_PROP_FPS)),
-                "backend": cap.getBackendName()
-            }
+            if cap.isOpened():
+                camera_info = {
+                    "resolution": f"{int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))}x{int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))}",
+                    "fps": int(cap.get(cv2.CAP_PROP_FPS))
+                }
+                cap.release()
             
-            # Try to get camera name using WMI
-            try:
-                w = wmi.WMI()
-                for camera in w.Win32_PnPEntity():
-                    if "camera" in str(camera.Caption).lower():
-                        camera_info["model"] = camera.Caption
-                        break
-            except:
-                pass
-                
-            cap.release()
             return camera_info
+            
         except Exception as e:
             print(f"Error collecting camera info: {str(e)}")
-            return {}
+            return {}    
 
     @staticmethod
     def get_screen_info():
@@ -82,6 +72,18 @@ class SystemInfoCollector:
             print(f"Error collecting screen info: {str(e)}")
             return {}
 
+class MetadataCollector(QThread):
+    """Background thread for collecting system metadata."""
+    finished = pyqtSignal(dict)
+    
+    def run(self):
+        """Collect system metadata in background."""
+        system_info = {
+            "laptop": SystemInfoCollector.get_laptop_info(),
+            "camera": SystemInfoCollector.get_camera_info(),
+            "screen": SystemInfoCollector.get_screen_info()
+        }
+        self.finished.emit(system_info)
 class MainWindow(QMainWindow):
     """Main window for collecting metadata and starting the experiment."""
     
@@ -91,13 +93,44 @@ class MainWindow(QMainWindow):
         self.metadata = {}
         self.notes = []
         self.system_info = {}
+        self.consent_given = False
+
+        # Start metadata collection in background
+        self.metadata_thread = MetadataCollector()
+        self.metadata_thread.finished.connect(self.on_metadata_collected)
+        self.metadata_thread.start()       
         self.setup_ui()
+        self.center_on_screen()    
+
+        # Show consent while metadata is being collected
+        self.show_consent_form()
         
+        # Only proceed if consent was given
+        if not self.consent_given:
+            self.close()
+        
+    def on_metadata_collected(self, system_info):
+        """Handle completed metadata collection."""
+        self.system_info = system_info
+        self.update_system_info_preview()
+        self.validate_required_fields()
+
+    def validate_required_fields(self):
+        """Check if all required fields are filled."""
+        is_valid = (
+            self.subject_id.text().strip() != "" and  # Subject ID is required
+            self.experimenter_id.text().strip() != "" and  # Experimenter ID is required
+            self.consent_given and  # Consent must be given
+            bool(self.system_info)  # System info must be collected
+        )
+        
+        self.next_btn.setEnabled(is_valid)        
+
     def setup_ui(self):
         """Initialize the main UI components."""
         self.setWindowTitle("Gaze Estimation Data Collection")
         self.setMinimumSize(800, 800)
-        
+                
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
@@ -106,6 +139,7 @@ class MainWindow(QMainWindow):
         experimenter_group = QGroupBox("Experimenter Information")
         experimenter_layout = QFormLayout()
         self.experimenter_id = QLineEdit()
+        self.experimenter_id.textChanged.connect(self.validate_required_fields)
         experimenter_layout.addRow("Experimenter ID:", self.experimenter_id)
         experimenter_group.setLayout(experimenter_layout)
         layout.addWidget(experimenter_group)
@@ -116,6 +150,7 @@ class MainWindow(QMainWindow):
         
         self.subject_id = QLineEdit()
         subject_layout.addRow("Subject ID:", self.subject_id)
+        self.subject_id.textChanged.connect(self.validate_required_fields)
         
         self.subject_age = QSpinBox()
         self.subject_age.setRange(18, 100)
@@ -142,9 +177,9 @@ class MainWindow(QMainWindow):
         self.system_info_text = QTextEdit()
         self.system_info_text.setReadOnly(True)
         system_layout.addWidget(self.system_info_text)
-        collect_metadata_btn = QPushButton("Collect System Metadata")
-        collect_metadata_btn.clicked.connect(self.collect_metadata)
-        system_layout.addWidget(collect_metadata_btn)
+        # collect_metadata_btn = QPushButton("Collect System Metadata")
+        # collect_metadata_btn.clicked.connect(self.collect_metadata)
+        # system_layout.addWidget(collect_metadata_btn)
         system_group.setLayout(system_layout)
         layout.addWidget(system_group)
         
@@ -175,61 +210,84 @@ class MainWindow(QMainWindow):
         
         # Automatically collect system metadata on startup
         QApplication.processEvents()
+
+    def format_system_info(self):
+        """Format the system information for display."""
+        preview_text = "Detected System Information:\n\n"
         
-    def collect_metadata(self):
-        """Collect and store all metadata including system information."""
-        try:
-            # Collect system information
-            self.system_info = {
-                "laptop": SystemInfoCollector.get_laptop_info(),
-                "camera": SystemInfoCollector.get_camera_info(),
-                "screen": SystemInfoCollector.get_screen_info()
+        if self.system_info.get("laptop"):
+            laptop = self.system_info["laptop"]
+            preview_text += "Laptop:\n"
+            preview_text += f"- Model: {laptop.get('manufacturer', 'Unknown')} {laptop.get('model', 'Unknown')}\n"
+            preview_text += f"- OS: {laptop.get('os', 'Unknown')}\n"
+            preview_text += f"- CPU: {laptop.get('processor', 'Unknown')}\n"
+            preview_text += f"- RAM: {laptop.get('ram_gb', 'Unknown')} GB\n\n"
+        
+        if self.system_info.get("camera"):
+            camera = self.system_info["camera"]
+            preview_text += "Camera:\n"
+            preview_text += f"- Model: {camera.get('model', 'Unknown')}\n"
+            preview_text += f"- Resolution: {camera.get('resolution', 'Unknown')}\n"
+            preview_text += f"- FPS: {camera.get('fps', 'Unknown')}\n\n"
+        
+        if self.system_info.get("screen"):
+            screen = self.system_info["screen"]
+            preview_text += "Screen:\n"
+            preview_text += f"- Resolution: {screen.get('resolution', 'Unknown')}\n"
+            preview_text += f"- Physical Size: {screen.get('size_mm', 'Unknown')} mm\n"
+            preview_text += f"- Refresh Rate: {screen.get('refresh_rate', 'Unknown')} Hz\n"
+        
+        return preview_text        
+
+    def show_consent_form(self):
+        """Display informed consent form and get user response."""
+        consent_text = """INFORMED CONSENT FOR GAZE TRACKING STUDY
+
+Purpose:
+This study collects data about eye movements and facial landmarks to improve human-robot interaction. 
+
+Procedure:
+- You will look at dots appearing on the screen while a camera tracks your face
+- Multiple short trials (2 minutes each) with different camera angles
+- Regular breaks between trials
+- Total session time: approximately 10-20 minutes
+
+Data Collection:
+- We collect facial landmark coordinates and eye movement data
+- No actual images or video of your face are stored
+- All data is anonymized and stored securely
+- Data will be used for research purposes only
+
+Your Rights:
+- Participation is voluntary
+- You can take breaks whenever needed
+- You may stop participating at any time
+- You can request your data to be deleted
+
+Risks & Benefits:
+- Minimal risk: possible mild eye fatigue
+- Regular breaks are provided
+- Your participation helps improve human-machine interaction technology
+
+Do you consent to participate in this study?"""
+
+        reply = QMessageBox.question(self, 'Informed Consent', 
+                                   consent_text,
+                                   QMessageBox.Yes | QMessageBox.No,
+                                   QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            self.consent_given = True
+            # Add consent to metadata
+            self.metadata['consent'] = {
+                'given': True,
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
-            
-            # Update system info preview
-            self.update_system_info_preview()
-            
-            # Collect user input
-            subject_data = {
-                "id": self.subject_id.text(),
-                "age": self.subject_age.value(),
-                "gender": self.subject_gender.currentText(),
-                "vision_correction": self.vision_correction.currentText(),
-                "dominant_eye": self.dominant_eye.currentText()
-            }
-            
-            # Validate input
-            if not self.validate_metadata(subject_data):
-                return
-            
-            # Combine all metadata
-            self.metadata = {
-                "subject": subject_data,
-                "session": {
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "start_time": datetime.now().strftime("%H:%M:%S"),
-                    "experimenter": self.experimenter_id.text()
-                },
-                "equipment": {
-                    "laptop": self.system_info["laptop"],
-                    "camera": self.system_info["camera"],
-                    "screen": self.system_info["screen"]
-                },
-                "software": {
-                    "app_version": self.data_manager.app_version,
-                    "opencv_version": cv2.__version__,
-                    "python_version": platform.python_version(),
-                    "os_platform": platform.platform()
-                },
-                "notes": self.notes
-            }
-            
-            self.next_btn.setEnabled(True)
-            QMessageBox.information(self, "Success", "Metadata collected successfully!")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to collect metadata: {str(e)}")
-            
+        else:
+            self.consent_given = False
+            QMessageBox.information(self, "Study Ended", 
+                "Thank you for your consideration. The study will now close.")        
+
     def update_system_info_preview(self):
         """Update the system information preview text."""
         preview_text = "Detected System Information:\n\n"
@@ -280,19 +338,69 @@ class MainWindow(QMainWindow):
             return False
         return True
     
+    def center_on_screen(self):
+        """Center the window on the screen."""
+        # Get the screen's geometry
+        screen = QApplication.primaryScreen().geometry()
+        # Get the window's geometry
+        window = self.geometry()
+        # Calculate the center point
+        center_point = screen.center()
+        # Move the window
+        self.move(center_point.x() - window.width()//2, 
+                center_point.y() - window.height()//2)
+   
     def proceed_to_setup(self):
         """Save metadata and proceed to experiment setup."""
         if not hasattr(self, 'metadata') or not self.metadata:
-            QMessageBox.warning(self, "Warning", "Please collect metadata first!")
+            QMessageBox.warning(self, "Warning", "Please wait for metadata collection to complete!")
             return
             
         try:
+            # Validate required fields again
+            if not self.subject_id.text().strip():
+                QMessageBox.warning(self, "Error", "Subject ID is required!")
+                return
+                
+            if not self.experimenter_id.text().strip():
+                QMessageBox.warning(self, "Error", "Experimenter ID is required!")
+                return
+                
+            if not self.consent_given:
+                QMessageBox.warning(self, "Error", "Informed consent is required!")
+                return
+            
+            # Collect user input
+            subject_data = {
+                "id": self.subject_id.text().strip(),
+                "age": self.subject_age.value(),
+                "gender": self.subject_gender.currentText(),
+                "vision_correction": self.vision_correction.currentText(),
+                "dominant_eye": self.dominant_eye.currentText()
+            }
+            
+            # Update metadata with all information
+            self.metadata.update({
+                "subject": subject_data,
+                "session": {
+                    "date": datetime.now().strftime("%Y-%m-%d"),
+                    "start_time": datetime.now().strftime("%H:%M:%S"),
+                    "experimenter": self.experimenter_id.text().strip()
+                },
+                "equipment": {
+                    "laptop": self.system_info.get("laptop", {}),
+                    "camera": self.system_info.get("camera", {}),
+                    "screen": self.system_info.get("screen", {})
+                }
+            })
+                
             # Create subject directory and save metadata
             subject_dir = self.data_manager.create_subject_directory(self.metadata["subject"]["id"])
             self.data_manager.save_metadata(subject_dir, self.metadata)
-            
+                            
             # Launch setup window
-            self.setup_window = SetupWindow(self.data_manager, subject_dir)
+            self.setup_window = SetupWindow(self.data_manager, subject_dir)            
+
             self.setup_window.show()
             self.hide()
             
