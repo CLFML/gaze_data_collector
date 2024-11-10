@@ -77,7 +77,7 @@ class SetupWindow(QWidget):
         # Pitch offset input
         offset_layout = QHBoxLayout()
         self.pitch_offset = QDoubleSpinBox()
-        self.pitch_offset.setRange(-45.0, 45.0)
+        self.pitch_offset.setRange(-90.0,90.0)
         self.pitch_offset.setDecimals(1)
         self.pitch_offset.setSingleStep(0.5)
         self.pitch_offset.setValue(0.0)
@@ -218,11 +218,18 @@ class SetupWindow(QWidget):
     
     def setup_camera(self):
         """Initialize the camera preview."""
+        if self.camera is not None:
+            self.camera.release()  # Release existing camera if any
+
         self.camera = cv2.VideoCapture(0)
         if not self.camera.isOpened():
             QMessageBox.critical(self, "Error", "Failed to open camera!")
             return
         
+        # Start timer for camera preview updates
+        if hasattr(self, 'timer'):
+            self.timer.stop()  # Stop existing timer if any
+
         # Start timer for camera preview updates
         self.timer = QTimer()
         self.timer.timeout.connect(self.update_preview)
@@ -368,6 +375,12 @@ class SetupWindow(QWidget):
             # Create new trial directory
             trial_dir = self.data_manager.create_trial_directory(self.subject_dir)
 
+            # Clean up camera resources before starting experiment
+            if self.camera is not None:
+                self.camera.release()
+            if hasattr(self, 'timer'):
+                self.timer.stop()            
+
             # Get selected pitch and apply offset correction
             selected_pitch = self.pitch_angles[self.pitch_combo.currentIndex()]
             corrected_pitch = selected_pitch - self.pitch_offset  # Subtract offset to get true pitch
@@ -400,8 +413,12 @@ class SetupWindow(QWidget):
                 trial_dir,
                 trial_config
             )
+
+            # Connect the finished signal
+            self.experiment_window.finished.connect(self.on_experiment_finished)
             self.experiment_window.show()
-            self.hide()
+            self.hide()  # Hide setup window but don't close it
+            
             
         except Exception as e:
             QMessageBox.critical(self, "Error", 
@@ -419,6 +436,10 @@ class SetupWindow(QWidget):
         self.validation_label.setText("Status: Not validated")
         self.validation_label.setStyleSheet("color: black")
         self.start_btn.setEnabled(False)
+        
+        # Show window and reinitialize camera
+        self.show()
+        self.setup_camera()
         
         # Show options dialog
         self.show_next_options()
