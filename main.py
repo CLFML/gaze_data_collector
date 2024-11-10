@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication
 from data_manager import DataManager
-
+import os
 class GazeEstimationApp:
     """Main application class for the gaze estimation experiment."""
     
@@ -39,6 +39,8 @@ class GazeEstimationApp:
             return False
 
 def main():
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress TensorFlow logging
+
     """Main entry point of the application."""
     # Create application instance
     app = GazeEstimationApp()
