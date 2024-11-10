@@ -139,15 +139,15 @@ class ExperimentWindow(QWidget):
         
     def start_experiment(self):
         """Start the experiment sequence."""
-        QMessageBox.information(self, "Experiment Instructions",
-            """During this experiment:
-            • You will see dots appearing on the screen
-            • Look at each dot until it disappears
-            • When you see a green dot, please smile
-            • A rest period will occur between dots
-            • The experiment takes about 2 minutes
-            
-            Click OK when you're ready to begin.""")
+        msg = QMessageBox.information(self, "Experiment Instructions",
+                                      """During this experiment:
+• You will see dots on the screen
+• Look at each dot until it disappears
+• Smile when you see a green dot
+• A rest period will occur between dots
+• The experiment takes about 1 minute
+Click OK when you're ready to begin.""")
+
         self.status_label.setText("Experiment starting...")
         self.show_next_dot()
 
