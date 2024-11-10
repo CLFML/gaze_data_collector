@@ -14,6 +14,44 @@ class GazeEstimationApp:
         self.app.setStyle('Fusion')
         self.app.setApplicationName('Gaze Estimation Experiment')
         self.app.setApplicationVersion('1.0.3')
+
+        # # Add QMessageBox style
+        # self.app.setStyleSheet("""
+        #     QMessageBox {
+        #         font-size: 14pt;
+        #     }
+        #     QMessageBox QPushButton {
+        #         font-size: 14pt;
+        #         padding: 5px 20px;
+        #     }
+        # """)
+
+        # Set global font size for all UI elements
+        base_font_size = 14  # Adjust this single value to scale all UI elements
+        
+        # Apply global stylesheet with the base font size
+        self.app.setStyleSheet(f"""
+            * {{
+                font-size: {base_font_size}pt;
+            }}
+            
+            /* Preserve relative scaling for headers and special elements */
+            QGroupBox {{
+                font-size: {base_font_size + 1}pt;
+                font-weight: bold;
+                padding-top: 15px;
+            }}
+            
+            QPushButton {{
+                padding: 8px 15px;
+                min-height: 30px;
+            }}
+            
+            QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
+                padding: 5px;
+                min-height: 30px;
+            }}
+        """)        
         
         # Create data manager with application instance
         self.data_manager = DataManager(app_version='1.0.3')
