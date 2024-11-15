@@ -297,6 +297,7 @@ Procedure:
 - Multiple short trials (2 minutes each) with different camera angles
 - Regular breaks between trials
 - Total session time: approximately 10-20 minutes
+_ Minimal participation age: 16 years
 
 Data Collection:
 - We collect facial landmark coordinates and eye movement data
